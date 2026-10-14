@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kartu Ulang Tahun GORO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: preview kotak 1:1 menempel di kiri, panel kerja di kanan; satu kolom di layar sempit. */
+:root{
+  --bg:#eaf5f4; --surface:#ffffff; --surface-2:#f1f9f8; --ink:#0a3a3a; --muted:#44706f;
+  --line:#c6dedd; --accent:#086968; --on-accent:#ffffff; --hi:#2ac0bf;
+  --ok:#0b6b43; --warn:#7a4700; --warn-bg:#fff1d6; --danger:#a12a2a; --danger-bg:#fde9e9;
+  --font:"Montserrat","Gotham",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#062a2a; --surface:#0b3c3c; --surface-2:#0e4747; --ink:#e4f6f5; --muted:#93c2c0;
+    --line:#1f5a59; --accent:#2ac0bf; --on-accent:#032424; --hi:#2ac0bf;
+    --ok:#7be0b0; --warn:#ffcf7a; --warn-bg:#3a2d0f; --danger:#ffa3a3; --danger-bg:#431d1d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#062a2a; --surface:#0b3c3c; --surface-2:#0e4747; --ink:#e4f6f5; --muted:#93c2c0;
+  --line:#1f5a59; --accent:#2ac0bf; --on-accent:#032424; --hi:#2ac0bf;
+  --ok:#7be0b0; --warn:#ffcf7a; --warn-bg:#3a2d0f; --danger:#ffa3a3; --danger-bg:#431d1d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:24px 40px;
+}
+.wrap{max-width:1180px;margin:0 auto}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:20px}
+h1{margin:0;font-size:clamp(1.45rem,3.4vw,2rem);font-weight:800;letter-spacing:-.01em;line-height:1.15;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--muted);max-width:60ch}
+h2{margin:0 0 10px;font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.78rem;color:var(--muted);font-weight:600}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--hi);display:inline-block}
+.chip.off i{background:#c98a1b}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:28px;align-items:start}
+@media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}}
+.pv{position:sticky;top:max(16px,env(safe-area-inset-top,0px))}
+@media (max-width:860px){.pv{position:static}}
+.stage{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--surface);box-shadow:0 10px 30px -14px rgba(8,60,60,.45)}
+canvas#cv{display:block;width:100%;height:auto;aspect-ratio:1/1;max-width:100%}
+.pv-cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;margin:10px 2px 0;font-size:.82rem;color:var(--muted)}
+.pv-cap b{color:var(--ink);font-weight:700;overflow-wrap:anywhere}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0}
+.sec + .sec{border-top:1px solid var(--line);margin-top:20px;padding-top:20px}
+.thumbs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.th{position:relative;aspect-ratio:1/1;padding:0;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-2);cursor:pointer;color:var(--muted);font:inherit}
+.th img{display:block;width:100%;height:100%;object-fit:cover}
+.th .n{position:absolute;left:5px;bottom:5px;min-width:22px;height:22px;border-radius:11px;background:var(--accent);color:var(--on-accent);font-size:.75rem;font-weight:800;display:grid;place-items:center;padding:0 6px}
+.th.empty{border-style:dashed;display:grid;place-items:center;font-size:.7rem;font-weight:600;text-align:center;padding:6px}
+.th[aria-pressed="true"]{outline:3px solid var(--hi);outline-offset:2px;border-color:var(--hi)}
+:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.btn{font:inherit;font-weight:700;font-size:.88rem;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:40px}
+.btn:hover:not(:disabled){border-color:var(--hi)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{min-height:34px;padding:5px 10px;font-size:.8rem}
+.hint{margin:10px 0 0;font-size:.82rem;color:var(--muted);max-width:62ch}
+.hint.inline{margin:0}
+
+.tabs{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px;max-width:100%}
+.tabs button{font:inherit;font-weight:700;font-size:.86rem;padding:8px 16px;border:0;background:var(--surface-2);color:var(--muted);cursor:pointer;min-height:40px}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+label.lbl{display:block;font-weight:700;font-size:.86rem;margin-bottom:6px}
+input[type="text"],input[type="date"],select{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%;min-height:40px;min-width:0}
+input[type="text"]:focus-visible,input[type="date"]:focus-visible,select:focus-visible{border-color:var(--hi)}
+.check{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.88rem;font-weight:600}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+
+.rows{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.rowhead,.row{display:grid;grid-template-columns:2rem minmax(0,1fr) minmax(0,1fr) 10.5rem;grid-template-areas:"i n n a" ". p d t";gap:6px 8px;align-items:center}
+.rowhead{font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:0 9px;row-gap:0}
+.row{padding:8px;border:1px solid var(--line);border-radius:10px}
+.row.active{background:var(--surface-2);border-color:var(--hi)}
+.row .idx{grid-area:i;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.row .nm{grid-area:n}.row .tp{grid-area:t}.row .pc{grid-area:p}.row .dt{grid-area:d}
+.row .acts{grid-area:a;display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.row .sz{font-size:.75rem;color:var(--ok);font-weight:700;min-width:3.6rem;text-align:right;font-variant-numeric:tabular-nums}
+.rowhead .h-n{grid-area:n}.rowhead .h-t{grid-area:t}.rowhead .h-p{grid-area:p}.rowhead .h-d{grid-area:d}
+.rowscroll{max-height:520px;overflow:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:6px}
+.fn{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
+.fn b{color:var(--ink)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:14px}
+@media (max-width:420px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){
+  .rowhead{display:none}
+  .row{grid-template-columns:2rem minmax(0,1fr) minmax(0,1fr);grid-template-areas:"i n n" ". p p" ". d d" ". t a"}
+}
+.prog{width:100%;height:8px;border-radius:4px;accent-color:var(--accent);margin-top:12px}
+.msg{margin:14px 0 0;padding:10px 12px;border-radius:10px;font-size:.86rem;font-weight:600;background:var(--surface-2);border:1px solid var(--line)}
+.msg.ok{color:var(--ok)}.msg.warn{color:var(--warn);background:var(--warn-bg)}.msg.err{color:var(--danger);background:var(--danger-bg)}
+.spacer{flex:1 1 auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Kartu Ulang Tahun GORO</h1>
+      <p class="lede">Ganti nama di 5 varian design, lalu export JPG 1080×1080 px di bawah 1 MB, satuan atau banyak nama sekaligus. Nama file mengikuti PIC yang di-assign dan tanggal birthday.</p>
+    </div>
+    <span class="chip" id="fontChip"><i></i><span id="fontTxt">Cek font…</span></span>
+  </header>
+
+  <main class="app">
+    <section class="pv" aria-label="Pratinjau kartu">
+      <div class="stage"><canvas id="cv" width="1080" height="1080" role="img" aria-label="Pratinjau kartu ulang tahun"></canvas></div>
+      <p class="pv-cap"><span id="capVar"></span><span>1080 × 1080 px · JPG ≤ 1 MB</span></p>
+      <p class="pv-cap fn" style="margin-top:4px"><span>Nama file: <b id="capFile"></b></span></p>
+    </section>
+
+    <section class="panel" aria-label="Pengaturan">
+      <div class="sec">
+        <h2>Varian design</h2>
+        <div class="thumbs" id="thumbs"></div>
+        <div class="btns">
+          <button class="btn" id="btnBg" type="button">Ganti background (opsional)</button>
+          <input type="file" id="fileBg" accept="image/*" multiple hidden>
+          <span class="hint inline" id="bgStat"></span>
+        </div>
+        <p class="hint">Kelima background sudah terpasang. Tombol di atas hanya untuk mengganti: pilih 1 file untuk varian yang sedang dipilih, atau 5 file sekaligus untuk semua varian (diurutkan sesuai nama file).</p>
+      </div>
+
+      <div class="sec">
+        <h2>Nama penerima</h2>
+        <div class="tabs" role="tablist" aria-label="Mode input nama">
+          <button role="tab" type="button" id="tabOne" aria-selected="true" aria-controls="paneOne">Satu nama</button>
+          <button role="tab" type="button" id="tabBulk" aria-selected="false" aria-controls="paneBulk">Banyak nama</button>
+        </div>
+
+        <div id="paneOne" role="tabpanel" aria-labelledby="tabOne">
+          <label class="lbl" for="nameOne">Nama</label>
+          <input type="text" id="nameOne" value="Rudyono" maxlength="80" autocomplete="off">
+          <div class="grid2">
+            <div>
+              <label class="lbl" for="picOne">Assign ke (PIC)</label>
+              <input type="text" id="picOne" maxlength="60" autocomplete="off" list="picList" placeholder="Nama PIC">
+            </div>
+            <div>
+              <label class="lbl" for="dateOne">Tanggal birthday</label>
+              <input type="date" id="dateOne">
+            </div>
+          </div>
+          <div class="btns">
+            <button class="btn primary" id="btnOne" type="button">Download JPG</button>
+            <span class="hint inline" id="oneStat"></span>
+          </div>
+        </div>
+
+        <div id="paneBulk" role="tabpanel" aria-labelledby="tabBulk" hidden>
+          <div class="btns" style="margin-top:0">
+            <button class="btn" id="btnTpl" type="button">Download template tabel</button>
+            <button class="btn" id="btnUp" type="button">Upload tabel terisi</button>
+            <input type="file" id="fileTab" accept=".xlsx,.xls,.csv,.txt" hidden>
+          </div>
+          <p class="hint">Isi kolom Nama, PIC (Assign) dan Tanggal Birthday di template (Excel atau CSV), simpan, lalu upload lagi di sini. Kolom Template boleh dikosongkan agar mengikuti varian terpilih, atau diisi angka 1 sampai 5 untuk varian tertentu per nama. Nama file JPG: <b>NAMA PIC_TANGGAL BIRTHDAY</b>.</p>
+          <div class="rows">
+            <div class="rowhead" aria-hidden="true"><span></span><span class="h-n">Nama</span><span class="h-p">PIC (assign)</span><span class="h-d">Tgl birthday</span><span class="h-t">Varian</span></div>
+            <div class="rowscroll" id="rowList"></div>
+          </div>
+          <div class="btns">
+            <button class="btn sm" id="btnAdd" type="button">+ Tambah baris</button>
+            <button class="btn sm" id="btnClear" type="button">Kosongkan</button>
+            <span class="spacer"></span>
+            <button class="btn primary" id="btnAll" type="button">Download semua (ZIP)</button>
+          </div>
+          <progress class="prog" id="prog" max="1" value="0" hidden></progress>
+        </div>
+
+        <label class="check"><input type="checkbox" id="caps" checked> Huruf kapital semua</label>
+        <p class="msg" id="msg" role="status" aria-live="polite" hidden></p>
+        <datalist id="picList"></datalist>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var SIZE = 1080, LIMIT = 1000000;
+  // Posisi tengah nama dan lebar maksimal teks, diukur dari design Canva asli per halaman.
+  var PAGES = [
+    {cx:540,   cy:664, maxW:784, box:[108,599,864,257],   bg:'#084041'},
+    {cx:540,   cy:668, maxW:784, box:[108,586,864,257],   bg:'#e7f6f6'},
+    {cx:545.6, cy:665, maxW:718, box:[146.4,573,798.4,257], bg:'#0d5b5b'},
+    {cx:540,   cy:666, maxW:784, box:[108,592.4,864,257], bg:'#f4fdfd'},
+    {cx:540,   cy:669, maxW:784, box:[108,586,864,257],   bg:'#cffffc'}
+  ];
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { page:0, mode:'one', caps:true, active:0, busy:false };
+  function mkRow(name, tpl, pic, date){ return {name:name||'', tpl:(tpl==null?null:tpl), pic:pic||'', date:date||'', size:null}; }
+  var rows = [
+    mkRow('Rudyono'), mkRow('Ijul'), mkRow('Dewi Rahmawati',2), mkRow('Rakhmat Mogar Poerbonegoro',3), mkRow('Tomaz Bosio',4)
+  ];
+  var bg = [null,null,null,null,null];
+  var FAMILY = '"Montserrat", Arial, sans-serif';
+  var gothamFound = false;
+
+  /* ---------- font ---------- */
+  function hasFont(name){
+    var c = document.createElement('canvas').getContext('2d'), t = 'mmmmmmmmmmlliWW';
+    c.font = '72px monospace'; var a = c.measureText(t).width;
+    c.font = '72px "'+name+'", monospace'; return c.measureText(t).width !== a;
+  }
+  function detectFont(){
+    var list = ['Gotham','Gotham Rounded','Gotham SSm','Gotham Medium','Gotham Narrow'];
+    var found = null;
+    for (var i=0;i<list.length;i++){ if (hasFont(list[i])) { found = list[i]; break; } }
+    gothamFound = !!found;
+    FAMILY = (found ? '"'+found+'", ' : '') + '"Montserrat", "Proxima Nova", Poppins, Arial, sans-serif';
+    $('fontTxt').textContent = found ? 'Font: '+found : 'Gotham tidak ada, dipakai Montserrat';
+    $('fontChip').classList.toggle('off', !found);
+  }
+
+  /* ---------- helpers ---------- */
+  function say(text, kind){
+    var m = $('msg'); m.textContent = text; m.className = 'msg' + (kind ? ' '+kind : ''); m.hidden = !text;
+  }
+  function kb(n){ return n >= 1048576 ? (n/1048576).toFixed(2)+' MB' : Math.round(n/1024)+' KB'; }
+  function safe(s){ return (s||'').replace(/[\\\/:*?"<>|\u0000-\u001f]+/g,'').replace(/\s+/g,' ').trim().slice(0,60) || 'nama'; }
+  /* PIC + tanggal birthday -> nama file "NAMA PIC_DD-MM-YYYY.jpg" */
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function isoOk(y,m,d){ var t=new Date(Date.UTC(y,m-1,d)); return y>=1900 && y<=2200 && t.getUTCFullYear()===y && t.getUTCMonth()===m-1 && t.getUTCDate()===d; }
+  function toIso(y,m,d){ return isoOk(y,m,d) ? y+'-'+pad2(m)+'-'+pad2(d) : ''; }
+  function fmtDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); return m ? m[3]+'-'+m[2]+'-'+m[1] : ''; }
+  var BULAN = {jan:1,januari:1,january:1,feb:2,februari:2,february:2,mar:3,maret:3,march:3,apr:4,april:4,mei:5,may:5,jun:6,juni:6,june:6,
+    jul:7,juli:7,july:7,agu:8,agt:8,agus:8,agustus:8,aug:8,august:8,sep:9,sept:9,september:9,okt:10,oktober:10,oct:10,october:10,
+    nov:11,nopember:11,november:11,des:12,desember:12,dec:12,december:12};
+  // Terima tanggal dari Excel (angka serial / Date) atau teks: 15-10-2026, 15/10/2026, 2026-10-15, 15 Oktober 2026, 15 Okt.
+  function parseDate(v){
+    if (v==null || v==='') return '';
+    if (v instanceof Date && !isNaN(v)) return toIso(v.getFullYear(), v.getMonth()+1, v.getDate());
+    if (typeof v==='number' || /^\d{4,6}(\.\d+)?$/.test(String(v).trim())){
+      var n=Number(v);
+      if (n>59 && n<200000){ var t=new Date(Date.UTC(1899,11,30)+Math.floor(n)*86400000); return toIso(t.getUTCFullYear(), t.getUTCMonth()+1, t.getUTCDate()); }
+      return '';
+    }
+    var s=String(v).trim().toLowerCase().replace(/\s+/g,' '), y=new Date().getFullYear(), m;
+    if ((m=/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(s))) return toIso(+m[1],+m[2],+m[3]);
+    if ((m=/^(\d{1,2})[-\/. ](\d{1,2})(?:[-\/. ](\d{2,4}))?$/.exec(s))){ var yy=m[3]?+m[3]:y; if (yy<100) yy+=2000; return toIso(yy,+m[2],+m[1]); }
+    if ((m=/^(\d{1,2})[-\/. ]?([a-z]+)\.?(?:[-\/. ,]+(\d{2,4}))?$/.exec(s)) && BULAN[m[2]]){ var y2=m[3]?+m[3]:y; if (y2<100) y2+=2000; return toIso(y2,BULAN[m[2]],+m[1]); }
+    return '';
+  }
+  function cleanPart(s){ return (s||'').replace(/[\\\/:*?"<>|\u0000-\u001f]+/g,'').replace(/\s+/g,' ').trim().slice(0,60); }
+  function fileBase(pic, date){
+    return (cleanPart(pic) || 'Tanpa PIC') + '_' + (fmtDate(date) || 'Tanpa Tanggal');
+  }
+  function uniqueName(base, used){
+    var n=base+'.jpg', k=2;
+    while (used[n.toLowerCase()]) { n=base+' ('+k+').jpg'; k++; }
+    used[n.toLowerCase()]=true; return n;
+  }
+  function shown(name){ var n = (name||'').replace(/\s+/g,' ').trim(); return state.caps ? n.toLocaleUpperCase('id-ID') : n; }
+  function tick(){ return new Promise(function(r){ setTimeout(r,0); }); }
+  function effPage(r){ return (r && r.tpl != null) ? r.tpl : state.page; }
+  function currentName(){ return state.mode==='one' ? $('nameOne').value : (rows[state.active] ? rows[state.active].name : ''); }
+  function currentPage(){ return state.mode==='one' ? state.page : effPage(rows[state.active]); }
+  function currentFile(){
+    if (state.mode==='one') return fileBase($('picOne').value, $('dateOne').value)+'.jpg';
+    var r=rows[state.active]; return r ? fileBase(r.pic, r.date)+'.jpg' : '';
+  }
+  function updatePicList(){
+    var seen={}, out=[];
+    [$('picOne').value].concat(rows.map(function(r){ return r.pic; })).forEach(function(p){
+      p=cleanPart(p); if (p && !seen[p.toLowerCase()]){ seen[p.toLowerCase()]=1; out.push(p); }
+    });
+    var dl=$('picList'); dl.innerHTML='';
+    out.sort(function(a,b){ return a.localeCompare(b); }).forEach(function(p){ var o=document.createElement('option'); o.value=p; dl.appendChild(o); });
+  }
+
+  /* ---------- drawing ---------- */
+  function layoutName(ctx, text, maxW){
+    function f(s){ return '800 '+s+'px '+FAMILY; }
+    var s;
+    for (s=56; s>=42; s--){ ctx.font=f(s); if (ctx.measureText(text).width <= maxW) return {lines:[text], size:s}; }
+    var words = text.split(' ');
+    if (words.length > 1){
+      for (s=48; s>=22; s--){
+        ctx.font=f(s);
+        var best=null, bestW=1e9;
+        for (var k=1;k<words.length;k++){
+          var a=words.slice(0,k).join(' '), b=words.slice(k).join(' ');
+          var w=Math.max(ctx.measureText(a).width, ctx.measureText(b).width);
+          if (w<bestW){ bestW=w; best=[a,b]; }
+        }
+        if (bestW <= maxW) return {lines:best, size:s};
+      }
+    }
+    for (s=41; s>=16; s--){ ctx.font=f(s); if (ctx.measureText(text).width <= maxW) return {lines:[text], size:s}; }
+    return {lines:[text], size:16};
+  }
+  function rr(ctx,x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function draw(ctx, p, name, withNote){
+    var P = PAGES[p], b = bg[p];
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,SIZE,SIZE);
+    if (b){
+      var iw=b.img.naturalWidth, ih=b.img.naturalHeight, sc=Math.max(SIZE/iw, SIZE/ih);
+      var dw=iw*sc, dh=ih*sc;
+      ctx.drawImage(b.img, (SIZE-dw)/2, (SIZE-dh)/2, dw, dh);
+    } else {
+      ctx.fillStyle = P.bg; ctx.fillRect(0,0,SIZE,SIZE);
+      ctx.fillStyle = '#2ac0bf'; rr(ctx,P.box[0],P.box[1],P.box[2],P.box[3],48); ctx.fill();
+      if (withNote){
+        ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+        ctx.fillStyle = (p===0||p===2) ? '#ffffff' : '#086968';
+        ctx.font = '700 40px '+FAMILY; ctx.fillText('Background varian '+(p+1)+' belum diupload', 540, 300);
+        ctx.font = '500 30px '+FAMILY; ctx.fillText('Pratinjau posisi nama saja', 540, 350);
+      }
+    }
+    var t = shown(name);
+    if (t){
+      var L = layoutName(ctx, t, P.maxW);
+      ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#ffffff'; ctx.font='800 '+L.size+'px '+FAMILY;
+      var pitch = L.size*1.1, capH = L.size*0.7, n = L.lines.length;
+      for (var i=0;i<n;i++){
+        ctx.fillText(L.lines[i], P.cx, P.cy - (n-1)*pitch/2 + i*pitch + capH/2);
+      }
+    }
+  }
+  var raf = 0;
+  function redraw(){
+    if (raf) return;
+    raf = requestAnimationFrame(function(){
+      raf = 0;
+      var p = currentPage(), n = currentName();
+      draw($('cv').getContext('2d'), p, n, true);
+      $('capVar').innerHTML = '';
+      var b = document.createElement('b'); b.textContent = 'Varian '+(p+1);
+      $('capVar').appendChild(b);
+      var nm = shown(n);
+      $('capVar').appendChild(document.createTextNode(nm ? ' · '+nm : ' · (nama kosong)'));
+      $('capFile').textContent = currentFile();
+    });
+  }
+
+  /* ---------- export ---------- */
+  var off = document.createElement('canvas'); off.width = SIZE; off.height = SIZE;
+  function toBlob(c,q){ return new Promise(function(r){ c.toBlob(r,'image/jpeg',q); }); }
+  async function renderJpeg(p, name){
+    await document.fonts.load('800 56px Montserrat').catch(function(){});
+    draw(off.getContext('2d'), p, name, false);
+    var top = await toBlob(off,0.95);
+    if (top.size <= LIMIT) return top;
+    var lo=0.3, hi=0.95, best=null;
+    for (var i=0;i<8;i++){
+      var mid=(lo+hi)/2, b=await toBlob(off,mid);
+      if (b.size <= LIMIT){ best=b; lo=mid; } else { hi=mid; }
+    }
+    return best || await toBlob(off,0.3);
+  }
+  var CRC = (function(){ var t=new Uint32Array(256); for (var n=0;n<256;n++){ var c=n; for (var k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+  function crc32(u8){ var c=0xFFFFFFFF; for (var i=0;i<u8.length;i++) c = CRC[(c^u8[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+  function makeZip(files){
+    var enc=new TextEncoder(), parts=[], central=[], offset=0, d=new Date();
+    var time=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+    var date=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+    files.forEach(function(f){
+      var nb=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+      var h=new DataView(new ArrayBuffer(30));
+      h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+      h.setUint16(10,time,true); h.setUint16(12,date,true); h.setUint32(14,crc,true); h.setUint32(18,sz,true);
+      h.setUint32(22,sz,true); h.setUint16(26,nb.length,true); h.setUint16(28,0,true);
+      parts.push(h.buffer, nb, f.data);
+      var c=new DataView(new ArrayBuffer(46));
+      c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true);
+      c.setUint16(10,0,true); c.setUint16(12,time,true); c.setUint16(14,date,true); c.setUint32(16,crc,true);
+      c.setUint32(20,sz,true); c.setUint32(24,sz,true); c.setUint16(28,nb.length,true); c.setUint16(30,0,true);
+      c.setUint16(32,0,true); c.setUint16(34,0,true); c.setUint16(36,0,true); c.setUint32(38,0,true); c.setUint32(42,offset,true);
+      central.push(c.buffer, nb);
+      offset += 30+nb.length+sz;
+    });
+    var csize=0; for (var i=0;i<central.length;i++) csize += central[i].byteLength;
+    var e=new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true);
+    e.setUint32(12,csize,true); e.setUint32(16,offset,true);
+    return new Blob(parts.concat(central,[e.buffer]),{type:'application/zip'});
+  }
+  // Download standar browser, jalan di Vercel atau hosting statis mana pun.
+  async function save(filename, data, okText){
+    try {
+      var url=URL.createObjectURL(data), a=document.createElement('a');
+      a.href=url; a.download=filename; a.rel='noopener'; a.style.display='none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      say(okText || ('Tersimpan: '+filename), 'ok'); return true;
+    } catch(e){
+      say('Gagal menyimpan: '+((e && e.message)||'tidak diketahui'),'err'); return false;
+    }
+  }
+
+  /* ---------- background storage ---------- */
+  function idb(){ return new Promise(function(res,rej){
+    var r = indexedDB.open('goro-birthday-card',1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore('bg'); };
+    r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
+  }); }
+  async function idbPut(k,v){ try { var db=await idb(); await new Promise(function(res,rej){ var t=db.transaction('bg','readwrite'); t.objectStore('bg').put(v,k); t.oncomplete=res; t.onerror=function(){rej(t.error);}; }); return true; } catch(e){ return false; } }
+  async function idbAll(){ try { var db=await idb(); return await new Promise(function(res,rej){ var out={}, t=db.transaction('bg','readonly'), cur=t.objectStore('bg').openCursor(); cur.onsuccess=function(){ var c=cur.result; if(c){ out[c.key]=c.value; c.continue(); } else res(out); }; cur.onerror=function(){rej(cur.error);}; }); } catch(e){ return {}; } }
+  function loadImg(blob){ return new Promise(function(res,rej){
+    var url=URL.createObjectURL(blob), img=new Image();
+    img.onload=function(){ res({img:img,url:url,blob:blob}); }; img.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('bukan gambar')); }; img.src=url;
+  }); }
+  async function setBg(i, blob, persist){
+    var rec = await loadImg(blob);
+    if (bg[i]) URL.revokeObjectURL(bg[i].url);
+    bg[i] = rec;
+    if (persist) return await idbPut(i, blob);
+    return true;
+  }
+  function bgCount(){ return bg.filter(Boolean).length; }
+
+  /* ---------- UI refresh ---------- */
+  function buildThumbs(){
+    var box = $('thumbs'); box.innerHTML='';
+    PAGES.forEach(function(_,i){
+      var b=document.createElement('button'); b.type='button'; b.className='th'+(bg[i]?'':' empty');
+      b.setAttribute('aria-pressed', String(state.page===i)); b.setAttribute('aria-label','Varian '+(i+1)+(bg[i]?'':' (background belum diupload)'));
+      if (bg[i]){ var im=document.createElement('img'); im.src=bg[i].url; im.alt=''; b.appendChild(im); }
+      else { b.textContent='belum ada'; }
+      var n=document.createElement('span'); n.className='n'; n.textContent=String(i+1); b.appendChild(n);
+      b.addEventListener('click', function(){ state.page=i; refresh(); });
+      box.appendChild(b);
+    });
+  }
+  function refresh(){
+    buildThumbs();
+    var c=bgCount();
+    $('bgStat').textContent = c+' dari 5 background siap';
+    var needBg = !bg[state.page];
+    $('btnOne').disabled = state.busy || needBg || !shown($('nameOne').value);
+    var miss1 = [!cleanPart($('picOne').value) ? 'PIC' : '', !$('dateOne').value ? 'tanggal birthday' : ''].filter(Boolean).join(' dan ');
+    $('oneStat').textContent = needBg ? 'Upload background varian '+(state.page+1)+' dulu.' : (!shown($('nameOne').value) ? 'Isi nama dulu.' : (miss1 ? 'Isi '+miss1+' agar nama file lengkap.' : ''));
+    var valid = rows.filter(function(r){ return r.name.trim(); });
+    var missing = valid.some(function(r){ return !bg[effPage(r)]; });
+    $('btnAll').disabled = state.busy || !valid.length || missing;
+    $('btnAll').textContent = 'Download semua (ZIP)' + (valid.length ? ' · '+valid.length+' nama' : '');
+    redraw();
+  }
+  function renderRows(){
+    var list=$('rowList'); list.innerHTML='';
+    rows.forEach(function(r,i){
+      var el=document.createElement('div'); el.className='row'+(i===state.active?' active':''); el.dataset.i=String(i);
+      var opts='<option value="">Ikut pilihan ('+(state.page+1)+')</option>';
+      for (var k=0;k<5;k++) opts += '<option value="'+k+'"'+(r.tpl===k?' selected':'')+'>Varian '+(k+1)+'</option>';
+      el.innerHTML = '<span class="idx">'+(i+1)+'</span>'+
+        '<input type="text" class="nm" id="nm-'+i+'" aria-label="Nama baris '+(i+1)+'" maxlength="80" autocomplete="off">'+
+        '<input type="text" class="pc" id="pc-'+i+'" aria-label="PIC baris '+(i+1)+'" placeholder="PIC (assign)" maxlength="60" autocomplete="off" list="picList">'+
+        '<input type="date" class="dt" id="dt-'+i+'" aria-label="Tanggal birthday baris '+(i+1)+'">'+
+        '<select class="tp" id="tp-'+i+'" aria-label="Varian baris '+(i+1)+'">'+opts+'</select>'+
+        '<span class="acts"><span class="sz" id="sz-'+i+'">'+(r.size?kb(r.size):'')+'</span>'+
+        '<button type="button" class="btn sm" data-act="save">JPG</button>'+
+        '<button type="button" class="btn sm" data-act="del" aria-label="Hapus baris '+(i+1)+'">×</button></span>';
+      el.querySelector('.nm').value = r.name;
+      el.querySelector('.pc').value = r.pic;
+      el.querySelector('.dt').value = r.date;
+      list.appendChild(el);
+    });
+    updatePicList();
+    refresh();
+  }
+  function setActive(i){
+    if (state.active===i) return;
+    state.active=i;
+    Array.prototype.forEach.call($('rowList').children, function(el){ el.classList.toggle('active', Number(el.dataset.i)===i); });
+    redraw();
+  }
+
+  /* ---------- events ---------- */
+  function setMode(m){
+    state.mode=m;
+    $('tabOne').setAttribute('aria-selected', String(m==='one')); $('tabBulk').setAttribute('aria-selected', String(m==='bulk'));
+    $('paneOne').hidden = m!=='one'; $('paneBulk').hidden = m!=='bulk';
+    if (m==='bulk') renderRows(); else refresh();
+  }
+  $('tabOne').addEventListener('click', function(){ setMode('one'); });
+  $('tabBulk').addEventListener('click', function(){ setMode('bulk'); });
+  $('nameOne').addEventListener('input', refresh);
+  // PIC terakhir di mode satu nama diingat di browser ini (opsional, aman bila storage tidak ada).
+  try { var lastPic = localStorage.getItem('goro-bday-pic'); if (lastPic) $('picOne').value = lastPic; } catch(e){}
+  $('picOne').addEventListener('input', function(){ try { localStorage.setItem('goro-bday-pic', this.value); } catch(e){} refresh(); });
+  $('picOne').addEventListener('change', updatePicList);
+  $('dateOne').addEventListener('input', refresh);
+  $('dateOne').addEventListener('change', refresh);
+  $('caps').addEventListener('change', function(){ state.caps=this.checked; refresh(); });
+
+  $('btnBg').addEventListener('click', function(){ $('fileBg').click(); });
+  $('fileBg').addEventListener('change', async function(){
+    var files = Array.prototype.slice.call(this.files||[]).filter(function(f){ return /^image\//.test(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name); });
+    this.value='';
+    if (!files.length){ say('Pilih file gambar (JPG atau PNG).','err'); return; }
+    files.sort(function(a,b){ return a.name.localeCompare(b.name, undefined, {numeric:true}); });
+    var start = files.length>=5 ? 0 : state.page, put=0, kept=true, odd=0;
+    for (var i=0;i<files.length && start+i<5;i++){
+      try { var ok = await setBg(start+i, files[i], true); if(!ok) kept=false; put++; if (bg[start+i].img.naturalWidth!==bg[start+i].img.naturalHeight) odd++; }
+      catch(e){ say('File "'+files[i].name+'" tidak bisa dibaca sebagai gambar.','err'); }
+    }
+    var txt = put+' background dipasang'+(files.length>5?' (hanya 5 file pertama dipakai)':'')+'.';
+    if (odd) txt += ' Ada gambar yang tidak persegi, dipotong di tengah agar pas 1080×1080.';
+    if (!kept) txt += ' Tidak bisa disimpan di browser ini, upload ulang saat halaman dibuka lagi.';
+    say(txt, (odd||!kept) ? 'warn' : 'ok');
+    if (state.mode==='bulk') renderRows(); else refresh();
+  });
+
+  $('btnOne').addEventListener('click', async function(){
+    var name=$('nameOne').value, p=state.page;
+    if (!shown(name) || !bg[p]) return;
+    state.busy=true; refresh(); say('Membuat JPG…');
+    try {
+      var blob = await renderJpeg(p, name), fn = fileBase($('picOne').value, $('dateOne').value)+'.jpg';
+      await save(fn, blob, 'Tersimpan: '+fn+' ('+kb(blob.size)+')');
+    } finally { state.busy=false; refresh(); }
+  });
+
+  var rowList=$('rowList');
+  rowList.addEventListener('input', function(e){
+    var el=e.target.closest('.row'); if(!el) return; var i=Number(el.dataset.i);
+    if (e.target.classList.contains('nm')){ rows[i].name=e.target.value; rows[i].size=null; el.querySelector('.sz').textContent=''; setActive(i); refresh(); }
+    else if (e.target.classList.contains('pc')){ rows[i].pic=e.target.value; setActive(i); redraw(); }
+    else if (e.target.classList.contains('dt')){ rows[i].date=e.target.value; setActive(i); redraw(); }
+  });
+  rowList.addEventListener('change', function(e){
+    var el=e.target.closest('.row'); if(!el) return; var i=Number(el.dataset.i);
+    if (e.target.classList.contains('pc')){ rows[i].pic=e.target.value; updatePicList(); redraw(); return; }
+    if (e.target.classList.contains('dt')){ rows[i].date=e.target.value; redraw(); return; }
+    if (e.target.classList.contains('tp')){ rows[i].tpl = e.target.value==='' ? null : Number(e.target.value); rows[i].size=null; el.querySelector('.sz').textContent=''; setActive(i); refresh(); }
+  });
+  rowList.addEventListener('focusin', function(e){ var el=e.target.closest('.row'); if(el) setActive(Number(el.dataset.i)); });
+  rowList.addEventListener('click', async function(e){
+    var el=e.target.closest('.row'); if(!el) return; var i=Number(el.dataset.i);
+    var act=e.target.getAttribute('data-act');
+    if (!act){ setActive(i); return; }
+    if (act==='del'){
+      rows.splice(i,1); if (state.active>=rows.length) state.active=Math.max(0,rows.length-1); renderRows(); return;
+    }
+    if (act==='save'){
+      var r=rows[i], p=effPage(r);
+      if (!shown(r.name)){ say('Nama baris '+(i+1)+' masih kosong.','warn'); return; }
+      if (!bg[p]){ say('Upload background varian '+(p+1)+' dulu.','warn'); return; }
+      setActive(i); state.busy=true; refresh(); say('Membuat JPG…');
+      try {
+        var blob=await renderJpeg(p, r.name); r.size=blob.size; var s=$('sz-'+i); if (s) s.textContent=kb(blob.size);
+        var fn=fileBase(r.pic, r.date)+'.jpg';
+        await save(fn, blob, 'Tersimpan: '+fn+' ('+kb(blob.size)+')');
+      } finally { state.busy=false; refresh(); }
+    }
+  });
+  $('btnAdd').addEventListener('click', function(){
+    var prev=rows[rows.length-1];
+    rows.push(mkRow('', null, prev ? prev.pic : '')); state.active=rows.length-1; renderRows();
+    var inp=$('nm-'+state.active); if (inp){ inp.focus(); inp.scrollIntoView({block:'nearest'}); }
+  });
+  $('btnClear').addEventListener('click', function(){ rows=[mkRow('')]; state.active=0; say('Daftar nama dikosongkan.'); renderRows(); });
+
+  $('btnAll').addEventListener('click', async function(){
+    var valid=[]; rows.forEach(function(r,i){ if (r.name.trim()) valid.push({r:r,i:i}); });
+    if (!valid.length) return;
+    var prog=$('prog'); state.busy=true; prog.hidden=false; prog.value=0; refresh();
+    var files=[], used={};
+    var noMeta=valid.filter(function(it){ return !cleanPart(it.r.pic) || !it.r.date; }).length;
+    try {
+      for (var k=0;k<valid.length;k++){
+        var it=valid[k], p=effPage(it.r);
+        say('Membuat JPG '+(k+1)+' dari '+valid.length+'…');
+        var blob=await renderJpeg(p, it.r.name);
+        it.r.size=blob.size; var s=$('sz-'+it.i); if (s) s.textContent=kb(blob.size);
+        files.push({name:uniqueName(fileBase(it.r.pic, it.r.date), used), data:new Uint8Array(await blob.arrayBuffer())});
+        prog.value=(k+1)/valid.length; await tick();
+      }
+      var zip=makeZip(files);
+      var ok=await save('kartu-ulang-tahun_'+files.length+'-nama.zip', zip, 'ZIP tersimpan: '+files.length+' JPG, total '+kb(zip.size)+'.');
+      if (ok && noMeta) say('ZIP tersimpan: '+files.length+' JPG, total '+kb(zip.size)+'. '+noMeta+' baris belum ada PIC atau tanggal birthday, jadi nama filenya memakai "Tanpa PIC" / "Tanpa Tanggal".','warn');
+    } catch(err){ say('Proses berhenti: '+(err && err.message ? err.message : 'tidak diketahui'),'err'); }
+    finally { state.busy=false; prog.hidden=true; refresh(); }
+  });
+
+  /* ---------- tabel: template & upload ---------- */
+  $('btnTpl').addEventListener('click', async function(){
+    var data=[['No','Nama','Template','PIC (Assign)','Tanggal Birthday'],
+      [1,'Nama Karyawan 1','','Nama PIC','15-10-2026'],[2,'Nama Karyawan 2','','Nama PIC','16-10-2026'],[3,'Nama Karyawan 3',3,'Nama PIC','20-10-2026']];
+    var notes=[['Cara pakai'],['1. Ganti isi kolom Nama dengan nama yang mau dipakai (satu nama per baris).'],
+      ['2. Kolom Template boleh dikosongkan, artinya mengikuti varian yang dipilih di aplikasi.'],
+      ['3. Isi Template dengan angka 1 sampai 5 kalau nama tertentu harus memakai varian tertentu.'],
+      ['4. Isi PIC (Assign) dengan nama orang yang di-assign untuk kartu tersebut.'],
+      ['5. Isi Tanggal Birthday dengan format DD-MM-YYYY, contoh 15-10-2026 (format tanggal Excel juga bisa dibaca).'],
+      ['6. Nama file JPG yang terunduh: NAMA PIC_TANGGAL BIRTHDAY, contoh: Adit_15-10-2026.jpg'],
+      ['7. Simpan file, lalu upload lagi lewat tombol Upload tabel terisi.']];
+    if (window.XLSX){
+      var ws=XLSX.utils.aoa_to_sheet(data); ws['!cols']=[{wch:6},{wch:38},{wch:12},{wch:24},{wch:18}];
+      for (var rr2=1; rr2<data.length; rr2++){ var ref=XLSX.utils.encode_cell({r:rr2,c:4}); if (ws[ref]){ ws[ref].t='s'; ws[ref].z='@'; } }
+      var wn=XLSX.utils.aoa_to_sheet(notes); wn['!cols']=[{wch:90}];
+      var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Nama'); XLSX.utils.book_append_sheet(wb,wn,'Petunjuk');
+      var out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+      await save('template-nama-ulang-tahun.xlsx', new Blob([out],{type:'application/octet-stream'}), 'Template tabel tersimpan (.xlsx). Isi kolom Nama, PIC dan Tanggal Birthday, lalu upload lagi.');
+    } else {
+      var csv='﻿'+data.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\r\n');
+      await save('template-nama-ulang-tahun.csv', new Blob([csv],{type:'text/csv'}), 'Template tabel tersimpan (.csv). Isi kolom Nama, PIC dan Tanggal Birthday, lalu upload lagi.');
+    }
+  });
+  function parseCSV(text){
+    text=text.replace(/^﻿/,'');
+    var first=text.split(/\r?\n/)[0]||'';
+    var semi=(first.match(/;/g)||[]).length, comma=(first.match(/,/g)||[]).length, tab=(first.match(/\t/g)||[]).length;
+    var d = tab>semi && tab>comma ? '\t' : (semi>comma ? ';' : ',');
+    var out=[], row=[], cell='', q=false;
+    for (var i=0;i<text.length;i++){
+      var ch=text[i];
+      if (q){ if (ch==='"'){ if (text[i+1]==='"'){ cell+='"'; i++; } else q=false; } else cell+=ch; }
+      else if (ch==='"') q=true;
+      else if (ch===d){ row.push(cell); cell=''; }
+      else if (ch==='\n' || ch==='\r'){ if (ch==='\r' && text[i+1]==='\n') i++; row.push(cell); out.push(row); row=[]; cell=''; }
+      else cell+=ch;
+    }
+    if (cell!=='' || row.length){ row.push(cell); out.push(row); }
+    return out;
+  }
+  async function readTable(file){
+    var ext=(file.name.split('.').pop()||'').toLowerCase();
+    var buf=await file.arrayBuffer();
+    if (ext==='csv' || ext==='txt' || ext==='tsv') return parseCSV(new TextDecoder('utf-8').decode(buf));
+    if (!window.XLSX) throw new Error('Library Excel gagal dimuat. Simpan tabel sebagai .csv lalu upload lagi.');
+    var wb=XLSX.read(buf,{type:'array'}); var ws=wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  }
+  function extract(table){
+    var h=-1,nc=-1,tc=-1,pc=-1,dc=-1;
+    for (var i=0;i<Math.min(table.length,10);i++){
+      var cells=(table[i]||[]).map(function(c){ return String(c).trim().toLowerCase(); });
+      var n=cells.findIndex(function(c){ return /^(nama|name)/.test(c) && !/pic|assign/.test(c); });
+      if (n>=0){
+        h=i; nc=n;
+        tc=cells.findIndex(function(c){ return /^(template|halaman|page|varian)/.test(c); });
+        pc=cells.findIndex(function(c){ return /^(pic|assign|nama pic|penanggung)/.test(c); });
+        dc=cells.findIndex(function(c){ return /^(tanggal|tgl|birthday|ultah|ulang|date|lahir)/.test(c); });
+        break;
+      }
+    }
+    if (h<0){ nc = (table.length && table[0].length>1 && /^\d+$/.test(String(table[0][0]).trim())) ? 1 : 0; }
+    var out=[]; extract.badDate=0;
+    table.slice(h+1).forEach(function(r){
+      var name=String(r[nc]==null?'':r[nc]).replace(/\s+/g,' ').trim(); if(!name) return;
+      var t=null; if (tc>=0){ var v=parseInt(String(r[tc]).trim(),10); if (v>=1 && v<=5) t=v-1; }
+      var pic = pc>=0 ? cleanPart(String(r[pc]==null?'':r[pc])) : '';
+      var raw = dc>=0 ? r[dc] : '', date = parseDate(raw);
+      if (!date && String(raw==null?'':raw).trim()) extract.badDate++;
+      out.push(mkRow(name.slice(0,80), t, pic, date));
+    });
+    return out;
+  }
+  $('btnUp').addEventListener('click', function(){ $('fileTab').click(); });
+  $('fileTab').addEventListener('change', async function(){
+    var f=this.files && this.files[0]; this.value=''; if(!f) return;
+    try {
+      var list=extract(await readTable(f));
+      if (!list.length){ say('Tidak ada nama terbaca. Pastikan ada kolom bernama "Nama" dan isinya tidak kosong.','err'); return; }
+      var capped=list.length>500; if (capped) list=list.slice(0,500);
+      rows=list; state.active=0; renderRows();
+      var bad=extract.badDate||0;
+      say(list.length+' nama dimuat dari '+f.name+(capped?' (dibatasi 500 nama pertama)':'')+'.'+
+        (bad ? ' '+bad+' tanggal birthday tidak terbaca, cek formatnya (DD-MM-YYYY) di baris yang tanggalnya kosong.' : ''), (capped||bad)?'warn':'ok');
+    } catch(err){ say('Tabel tidak bisa dibaca: '+(err && err.message ? err.message : 'format tidak dikenal'),'err'); }
+  });
+
+  /* ---------- start ---------- */
+  detectFont();
+  state.mode='one'; updatePicList(); refresh();
+  Promise.all([document.fonts.load('800 56px Montserrat'), document.fonts.load('500 30px Montserrat')]).catch(function(){}).then(function(){ detectFont(); redraw(); });
+  (async function(){
+    for (var i=0;i<5;i++){
+      try { var r = await fetch('bg/'+(i+1)+'.png'); if (r.ok) await setBg(i, await r.blob(), false); } catch(e){}
+    }
+    var all = await idbAll();
+    for (var k in all){ var j=Number(k); if (j>=0 && j<5){ try { await setBg(j, all[k], false); } catch(e){} } }
+    if (state.mode==='bulk') renderRows(); else refresh();
+  })();
+})();
+</script>
+</body>
+</html>
